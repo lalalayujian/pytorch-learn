@@ -1,0 +1,42 @@
+Torch：有大量机器学习算法支持的科学计算框架，是一个与Numpy类似的张量操作库，使用的Lua语言
+PyTorch：基于Torch的python封装。支持GPU加速，还支持动态神经网络
+    两个高级功能：
+        具有强大的GPU加速的张量运算
+        包含自动求导系统的深度神经网络
+    PyTorch和Tensorflow的区别
+        Tensorflow：定义一次静态图，需要事先构建所有可能用到的图的路径。重复执行这个相同的图，可能提供不同的输入数据
+        PyTorch：动态图，每次前向传播时定义一个新的计算图，每次的图可以不一样，可根据需求来创建计算图，不需要事先构建所有可能用到的图的路径
+            比如：y=abs(x)，相当于有两条分支，左边为x<0，右边为x>=0
+                tensorflow需要在计算图中把两条分支都列出来
+                pytorch每次前向传播时自动选择分支，生的计算图其实只有一条分支
+
+基础：
+1. Tensor：和Numpy的ndarrays类似，同时可以使用GPU加速运算
+2. autograd：是神经网络的核心，为Tensor的所有操作提供自动求导
+    对于一个requires_grad为True的tensor，会跟踪对tensor的所有操作，每次操作生成新的tensor，tensor的grad_fn会记录此次操作的Function
+    完成计算后，可以调用.backward()来自动计算所有梯度，累积到.grad属性中。backward时会使用grad_fn属性自动求导
+    Tensor 和 Function 互相连接并构建一个非9循环图，它保存整个完整的计算过程的历史信息。
+3. nn.Module：可是一个简单的层也可是包含多个子Moudle的神经网络
+    神经网络基于autograd来定义模型，定义了前向传播，然后反向传播被自动通过autograd定义
+    nn里还包含损失函数（也是nn.Module的子类）
+4. GPU
+    使用GPU训练模型：模型和input tensor都转为cuda模式
+    多个GPU并行计算：nn.DataParallel(model)，自动将batch数据均分成多份，分别给GPU进行计算，各个GPU的梯度平均
+5. Dataset, DataLoader
+6. 注意：
+    bn、dropout层在训练和测试模式差距很大，训练时应设置.train()，测试时设置.eval()
+
+7. 显存探索：
+    1G=1000MB, 1MB=1000KB, 1KB=1000Byte, 1Byte=8bit, 1000或1024都可
+    一张float32型图片500*500*3*32bit=3M
+    模型占用显存：参数、前向计算产生的中间变量，后向传播时中间变量显存翻倍
+    优化器参数更新时保存中间变量wt，也使用显存
+    优化显存：
+        测试时关闭梯度计算with torch.no_grad()或者 with torch.set_grad_enabled(bool)
+        减少输入图像的尺寸
+        减少batch_size
+        一些神经网络层可以进行小优化，利用relu层中设置inplace
+8.优化器
+    常传入的params为model.parameters()，实际为一个生成器
+    可为不同层设置不同学习率，则传入[{"params": net_1.parameters(), 'lr':0.01},{}]格式
+
